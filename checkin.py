@@ -20,6 +20,7 @@ from utils.notify import notify
 load_dotenv()
 
 BALANCE_HASH_FILE = 'balance_hash.txt'
+ALWAYS_NOTIFY_BALANCE = os.getenv('ALWAYS_NOTIFY_BALANCE', '').lower() == 'true'
 
 
 def load_balance_hash():
@@ -284,7 +285,7 @@ async def main():
 	total_count = len(accounts)
 	notification_content = []
 	current_balances = {}
-	need_notify = False  # 是否需要发送通知
+	need_notify = ALWAYS_NOTIFY_BALANCE  # 是否需要发送通知
 	balance_changed = False  # 余额是否有变化
 
 	for i, account in enumerate(accounts):
@@ -340,7 +341,7 @@ async def main():
 			print('[INFO] No balance changes detected')
 
 	# 为有余额变化的情况添加所有成功账号到通知内容
-	if balance_changed:
+	if balance_changed or ALWAYS_NOTIFY_BALANCE:
 		for i, account in enumerate(accounts):
 			account_key = f'account_{i + 1}'
 			if account_key in current_balances:
