@@ -279,7 +279,7 @@ async def check_in_account(account: AccountConfig, account_index: int, app_confi
 async def main():
 	"""主函数"""
 	print('[SYSTEM] AnyRouter.top multi-account auto check-in script started (using Playwright)')
-	print(f'[TIME] Execution time (UTC+8): {now_utc8_str()}')
+	print(f'[TIME] {now_utc8_str()}')
 
 	app_config = AppConfig.load_from_env()
 	print(f'[INFO] Loaded {len(app_config.providers)} provider configuration(s)')
@@ -384,9 +384,7 @@ async def main():
 		else:
 			summary.append('【全部失败】请检查账号或网络')
 
-		time_info = f'【时间】执行时间（UTC+8）：{now_utc8_str()}'
-
-		notify_content = '\n\n'.join([time_info, '\n'.join(notification_content), '\n'.join(summary)])
+		notify_content = '\n\n'.join([f'【时间】：{now_utc8_str()}', '\n'.join(notification_content), '\n'.join(summary)])
 
 		print(notify_content)
 		notify.push_message('AnyRouter 签到通知', notify_content, msg_type='text')
