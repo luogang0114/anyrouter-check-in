@@ -8,7 +8,7 @@ import hashlib
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from dotenv import load_dotenv
@@ -21,6 +21,12 @@ load_dotenv()
 
 BALANCE_HASH_FILE = 'balance_hash.txt'
 ALWAYS_NOTIFY_BALANCE = os.getenv('ALWAYS_NOTIFY_BALANCE', '').lower() == 'true'
+TZ_UTC_8 = timezone(timedelta(hours=8))
+
+
+def now_utc8_str() -> str:
+	"""返回东八区当前时间字符串"""
+	return datetime.now(TZ_UTC_8).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def load_balance_hash():
@@ -145,7 +151,7 @@ def get_user_info(client, headers, user_info_url: str):
 					'success': True,
 					'quota': quota,
 					'used_quota': used_quota,
-					'display': f':money: 当前余额: ${quota}, 已用: ${used_quota}',
+					'display': f'💰 余额：${quota}｜已用：${used_quota}',
 				}
 		return {'success': False, 'error': f'Failed to get user info: HTTP {response.status_code}'}
 	except Exception as e:
@@ -252,6 +258,12 @@ async def check_in_account(account: AccountConfig, account_index: int, app_confi
 
 		if provider_config.needs_manual_check_in():
 			success = execute_check_in(client, account_name, provider_config, headers)
+			# 签到可能会更新额度，成功后重新获取一次用户信息
+			if success:
+				updated_info = get_user_info(client, headers, user_info_url)
+				if updated_info and updated_info.get('success'):
+					user_info = updated_info
+					print(user_info['display'])
 			return success, user_info
 		else:
 			print(f'[INFO] {account_name}: Check-in completed automatically (triggered by user info request)')
@@ -267,7 +279,7 @@ async def check_in_account(account: AccountConfig, account_index: int, app_confi
 async def main():
 	"""主函数"""
 	print('[SYSTEM] AnyRouter.top multi-account auto check-in script started (using Playwright)')
-	print(f'[TIME] Execution time: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+	print(f'[TIME] Execution time (UTC+8): {now_utc8_str()}')
 
 	app_config = AppConfig.load_from_env()
 	print(f'[INFO] Loaded {len(app_config.providers)} provider configuration(s)')
@@ -347,8 +359,8 @@ async def main():
 			if account_key in current_balances:
 				account_name = account.get_display_name(i)
 				# 只添加成功获取余额的账号，且避免重复添加
-				account_result = f'[余额] {account_name}'
-				account_result += f'\n:money: 当前余额: ${current_balances[account_key]["quota"]}, 已用: ${current_balances[account_key]["used"]}'
+				account_result = f'【余额】{account_name}'
+				account_result += f'\n💰 余额：${current_balances[account_key]["quota"]}｜已用：${current_balances[account_key]["used"]}'
 				# 检查是否已经在通知内容中（避免重复）
 				if not any(account_name in item for item in notification_content):
 					notification_content.append(account_result)
@@ -372,7 +384,7 @@ async def main():
 		else:
 			summary.append('【全部失败】请检查账号或网络')
 
-		time_info = f'【时间】执行时间：{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+		time_info = f'【时间】执行时间（UTC+8）：{now_utc8_str()}'
 
 		notify_content = '\n\n'.join([time_info, '\n'.join(notification_content), '\n'.join(summary)])
 
