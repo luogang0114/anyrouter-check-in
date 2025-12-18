@@ -2,12 +2,12 @@ name: AnyRouter 自动签到
 on:
   schedule:
     # GitHub Actions cron uses UTC time; minimum interval is 5 minutes
-    - cron: '0/5 * * * *'
+    - cron: '30 23 * * *'
   workflow_dispatch:
 
 jobs:
   checkin:
-    runs-on: windows-latest
+    runs-on: windows-2025
     environment: production
     env:
       PYTHONIOENCODING: utf-8
